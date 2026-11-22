@@ -23,9 +23,9 @@ Everything saves on your phone with AsyncStorage, so your ideas are still there 
 
 ## How to run it
 
-**What I used:** Expo **SDK 58** (`create-expo-app@latest` used the `default@sdk-58` template), Expo Router, TypeScript, and Expo Go on the **iOS Simulator** on my MacBook Air.
+**What I used:** Expo **SDK 58** (`create-expo-app@latest` used the `default@sdk-58` template), Expo Router, TypeScript, and Expo Go on my **iPhone**. I planned to use the iOS Simulator, but the simulator download needed 8.3 GB of free space my Mac didn't have, so I switched to my real phone.
 
-You need Node 22.13 or newer, Xcode (for the iOS Simulator), and a free Expo account.
+You need Node 22.13 or newer, Expo Go on your phone, and a free Expo account. Your phone and computer need to be on the same Wi-Fi.
 
 ```bash
 git clone https://github.com/atinm12/idea-storer.git
@@ -35,14 +35,14 @@ npx expo login     # same account you're signed into in Expo Go
 npx expo start
 ```
 
-Then press **i** in the terminal. Expo opens the iOS Simulator and installs Expo Go on it for you. On a real phone, you can scan the QR code with Expo Go instead.
+Then scan the QR code with your iPhone's Camera app and tap "Open in Expo Go." If it won't connect, try `npx expo start --tunnel`. On a Mac with Xcode, you can press **i** to use the iOS Simulator instead.
 
 ## How I built it
 
 1. I wrote `SPEC.md` first, with 20 acceptance criteria, and committed it before any code existed.
 2. I gave the spec to an AI agent and let it build the whole app. That's the "Raw agentic build output" commit, untouched.
 3. I opened a brand new agent session that had never seen the build. It reviewed the code against my spec and wrote `REVIEW.md`. I left that file exactly the way it came out.
-4. I fixed the findings that mattered ("Fixes after AI review" commit), then tested and polished it in the simulator.
+4. I fixed the findings that mattered ("Fixes after AI review" commit), then tested and polished it on my iPhone.
 
 ## What I did with the review
 
@@ -60,7 +60,7 @@ The review had 32 PASS, 0 FAIL, and 19 WARN. 0 FAIL made me a little suspicious,
 **Didn't fix, on purpose:**
 - **#39 (splash screen hangs if storage never answers):** On iOS, AsyncStorage just reads a local file and doesn't hang in practice. Adding a timeout would have meant starting with empty data, and that brings back the wipe problem from #32.
 - **#40 (no "discard changes?" warning when you back out):** This isn't in my spec. For quick idea capture, I think it's fine.
-- **#43 and #44 (header style and title timing):** These are small visual things that looked fine to me in the simulator.
+- **#43 and #44 (header style and title timing):** These are small visual things that looked fine to me on my phone.
 - **#45 (blank screen during delete):** It only lasts a split second, so I didn't change it.
 - **#46 (emoji count as 2 characters):** That's just how JavaScript counts strings. For an 80 character title, it doesn't matter.
 - **#47 to #49 (repeated code):** Fair point, but the app is small enough that pulling these out into helpers wasn't worth the risk this close to the deadline.

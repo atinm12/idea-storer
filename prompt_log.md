@@ -25,6 +25,8 @@ Claude ran `npx create-expo-app@latest` with no `--template` flag. It picked `de
 
 **What I learned:** Yes. The iOS Simulator only ships inside Xcode, and there's no separate download. You don't write any Xcode code, though. Expo uses the simulator to install Expo Go and run the JS bundle. A real iPhone with Expo Go is the free backup if Xcode is too slow.
 
+**What actually happened:** The simulator download failed with "Insufficient space available. Requires 8.34 GB," so I switched to Expo Go on my iPhone. I scanned the QR code from `npx expo start` with the Camera app.
+
 ---
 
 ## Phase 2: Learning the basics (Step 2)
@@ -137,4 +139,4 @@ These fixes became the `Fixes after AI review` commit. The skip reasons are in t
 ## Phase 7: Polish and docs
 
 ### Prompt 17: Polish and docs
-> Walk through every acceptance criterion with me in the simulator and fix anything that looks off. Then write the README in my tone: what the app does, each screen, how to run it (SDK 58, iOS Simulator), what I did with every review finding, and one thing that surprised me. Add an Expo Snack link so people can open the app from the GitHub repo.
+> Walk through every acceptance criterion with me on my iPhone and fix anything that looks off. Then write the README in my tone: what the app does, each screen, how to run it (SDK 58, Expo Go on iPhone), what I did with every review finding, and one thing that surprised me. Add an Expo Snack link so people can open the app from the GitHub repo.
