@@ -2,9 +2,17 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
-/** Shows "n / max" once the value is within 20 characters of the limit. */
-export function CharCounter({ length, max }: { length: number; max: number }) {
-  if (length < max - 20) return null;
+/** Shows "n / max" once the value is within `showWithin` characters of the limit. */
+export function CharCounter({
+  length,
+  max,
+  showWithin = 20,
+}: {
+  length: number;
+  max: number;
+  showWithin?: number;
+}) {
+  if (length < max - showWithin) return null;
   const atLimit = length >= max;
   return (
     <Text
@@ -18,7 +26,7 @@ export function CharCounter({ length, max }: { length: number; max: number }) {
 const styles = StyleSheet.create({
   counter: {
     alignSelf: 'flex-end',
-    fontSize: 13,
+    fontSize: 15,
     color: Colors.gray,
     marginTop: 4,
   },

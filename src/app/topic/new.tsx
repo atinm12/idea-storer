@@ -44,7 +44,6 @@ export default function NewTopicScreen() {
       return;
     }
     setDone(true);
-    // Topic is in memory even if the write failed (the store shows an alert).
     close();
   };
 
@@ -82,7 +81,7 @@ export default function NewTopicScreen() {
               {error}
             </Text>
           ) : null}
-          <CharCounter length={name.length} max={LIMITS.topicName} />
+          <CharCounter length={name.length} max={LIMITS.topicName} showWithin={6} />
         </View>
 
         <View style={styles.field}>

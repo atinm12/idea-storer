@@ -43,11 +43,12 @@ export default function TopicScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          setLeaving(true);
-          // Even if the write fails (store shows an alert), the topic is gone
-          // from memory, so head home.
-          await deleteTopic(topic.id);
-          goHome();
+          // If the write fails, the store rolls back and alerts, so stay here.
+          const ok = await deleteTopic(topic.id);
+          if (ok) {
+            setLeaving(true);
+            goHome();
+          }
         },
       },
     ]);

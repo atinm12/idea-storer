@@ -27,7 +27,7 @@ type StoreValue = {
   ideas: Idea[];
   /**
    * Returns the created idea's id (null if input was invalid) and whether it was
-   * written to storage. The idea stays in memory even when the write fails.
+   * written to storage. If the write fails, the idea is rolled back.
    */
   addIdea: (input: IdeaInput) => Promise<{ id: string | null; saved: boolean }>;
   updateIdea: (id: string, input: IdeaInput) => Promise<boolean>;
@@ -74,7 +74,12 @@ export function StoreProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  /**
+   * Shows the change right away, then writes it. If the write fails, the change
+   * is rolled back so what's on screen always matches what's stored.
+   */
   const commit = useCallback(async (next: AppData): Promise<boolean> => {
+    const previous = dataRef.current;
     dataRef.current = next;
     setData(next);
     const write = saveQueue.current.then(() => saveData(next));
@@ -84,6 +89,11 @@ export function StoreProvider({ children }: PropsWithChildren) {
       return true;
     } catch (error) {
       console.warn('[idea-storer] Failed to save data.', error);
+      // Only roll back if nothing newer has been applied on top of this change.
+      if (dataRef.current === next) {
+        dataRef.current = previous;
+        setData(previous);
+      }
       Alert.alert("Couldn't save. Try again.");
       return false;
     }
@@ -151,7 +161,8 @@ export function StoreProvider({ children }: PropsWithChildren) {
         return { error: `You already have a topic called ${name}.` };
       }
       const topic: Topic = { id: makeId(), name, emoji, isPreset: false };
-      await commit({ ...current, topics: [...current.topics, topic] });
+      const saved = await commit({ ...current, topics: [...current.topics, topic] });
+      if (!saved) return { error: "Couldn't save. Try again." };
       return { id: topic.id };
     },
     [commit],

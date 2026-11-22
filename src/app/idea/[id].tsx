@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -8,6 +8,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextInputInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -69,27 +70,23 @@ function IdeaForm({
   const [title, setTitle] = useState(idea?.title ?? '');
   const [details, setDetails] = useState(idea?.details ?? '');
   const [pickedTopicId, setPickedTopicId] = useState<string | null>(initialTopicId);
-  // After a new idea is created once, retries update it instead of duplicating it.
-  const [savedId, setSavedId] = useState<string | null>(idea?.id ?? null);
   const [busy, setBusy] = useState(false);
+  // A ref updates instantly, so a fast double tap can't start two saves.
+  const busyRef = useRef(false);
+  const detailsRef = useRef<TextInputInstance>(null);
 
   const canSave = title.trim().length > 0 && !busy;
   const randomTopic = topics.find((t) => t.id === RANDOM_TOPIC_ID);
 
   const handleSave = async () => {
-    if (!canSave) return;
+    if (!canSave || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     const input = { title, details, topicId: pickedTopicId };
-    let ok: boolean;
-    if (savedId) {
-      ok = await updateIdea(savedId, input);
-    } else {
-      // If the write fails the store shows an alert; the idea stays in memory
-      // and Save stays available to retry (as an update, not a duplicate).
-      const result = await addIdea(input);
-      if (result.id) setSavedId(result.id);
-      ok = result.saved;
-    }
+    // If the write fails, the store rolls it back and shows an alert, and the
+    // form stays open so Save can be tapped again.
+    const ok = idea ? await updateIdea(idea.id, input) : (await addIdea(input)).saved;
+    busyRef.current = false;
     setBusy(false);
     if (ok) goBack();
   };
@@ -102,9 +99,11 @@ function IdeaForm({
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          onLeaving();
-          await deleteIdea(idea.id);
-          goBack();
+          const ok = await deleteIdea(idea.id);
+          if (ok) {
+            onLeaving();
+            goBack();
+          }
         },
       },
     ]);
@@ -132,6 +131,8 @@ function IdeaForm({
             maxLength={LIMITS.ideaTitle}
             autoFocus={!idea}
             returnKeyType="next"
+            onSubmitEditing={() => detailsRef.current?.focus()}
+            submitBehavior="submit"
             style={[styles.input, styles.titleInput]}
             accessibilityLabel="Idea title"
           />
@@ -141,6 +142,7 @@ function IdeaForm({
         <View style={styles.field}>
           <Text style={styles.label}>Details</Text>
           <TextInput
+            ref={detailsRef}
             value={details}
             onChangeText={setDetails}
             placeholder="Details, how it would work, why it matters..."
@@ -272,7 +274,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   hint: {
-    fontSize: 13,
+    fontSize: 15,
     color: Colors.gray,
   },
   save: {

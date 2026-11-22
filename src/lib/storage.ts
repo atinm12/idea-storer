@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   LIMITS,
   PRESET_TOPICS,
-  TOPIC_EMOJIS,
   type AppData,
   type Idea,
   type Topic,
@@ -11,10 +10,7 @@ import {
 
 export const STORAGE_KEY = 'idea-storer/v1';
 
-const ALLOWED_EMOJIS = new Set<string>([
-  ...TOPIC_EMOJIS,
-  ...PRESET_TOPICS.map((t) => t.emoji),
-]);
+export const BACKUP_KEY_PREFIX = 'idea-storer/backup-';
 
 export function defaultData(): AppData {
   return { topics: PRESET_TOPICS.map((t) => ({ ...t })), ideas: [] };
@@ -31,7 +27,8 @@ function parseTopic(raw: unknown): Topic | null {
   if (typeof name !== 'string') return null;
   const trimmed = name.trim();
   if (trimmed.length === 0 || trimmed.length > LIMITS.topicName) return null;
-  if (typeof emoji !== 'string' || !ALLOWED_EMOJIS.has(emoji)) return null;
+  // Any short emoji string is fine, so changing the picker list later never drops topics.
+  if (typeof emoji !== 'string' || emoji.length === 0 || emoji.length > 16) return null;
   return { id, name: trimmed, emoji, isPreset: false };
 }
 
@@ -64,7 +61,10 @@ function parseIdea(raw: unknown): Idea | null {
  */
 export function sanitizeData(raw: unknown): AppData {
   const base = defaultData();
-  if (!isRecord(raw)) return base;
+  if (!isRecord(raw)) {
+    console.warn('[idea-storer] Saved data had the wrong shape; starting from presets.');
+    return base;
+  }
 
   const presetIds = new Set(base.topics.map((t) => t.id));
   const seenTopicIds = new Set(presetIds);
@@ -93,16 +93,57 @@ export function sanitizeData(raw: unknown): AppData {
     }
   }
 
+  const rawTopicCount = Array.isArray(raw.topics) ? raw.topics.length : 0;
+  const rawIdeaCount = Array.isArray(raw.ideas) ? raw.ideas.length : 0;
+  const droppedTopics = rawTopicCount - presetIdsIn(raw.topics, presetIds) - customTopics.length;
+  const droppedIdeas = rawIdeaCount - ideas.length;
+  if (droppedTopics > 0 || droppedIdeas > 0) {
+    console.warn(
+      `[idea-storer] Skipped ${droppedTopics} bad topic(s) and ${droppedIdeas} bad idea(s) while loading.`,
+    );
+  }
+
   return { topics: [...base.topics, ...customTopics], ideas };
 }
 
-export async function loadData(): Promise<AppData> {
+/** How many saved topics are presets (those are rebuilt from code, not "dropped"). */
+function presetIdsIn(rawTopics: unknown, presetIds: Set<string>): number {
+  if (!Array.isArray(rawTopics)) return 0;
+  return rawTopics.filter((t) => isRecord(t) && typeof t.id === 'string' && presetIds.has(t.id))
+    .length;
+}
+
+async function readRaw(): Promise<string | null> {
   try {
-    const json = await AsyncStorage.getItem(STORAGE_KEY);
-    if (json == null) return defaultData();
+    return await AsyncStorage.getItem(STORAGE_KEY);
+  } catch (firstError) {
+    console.warn('[idea-storer] Read failed, retrying once.', firstError);
+    return AsyncStorage.getItem(STORAGE_KEY);
+  }
+}
+
+/**
+ * Loads saved data. If the saved JSON is broken, a copy of it is stored under a
+ * backup key first, so the next save can't silently wipe the only copy.
+ */
+export async function loadData(): Promise<AppData> {
+  let json: string | null;
+  try {
+    json = await readRaw();
+  } catch (error) {
+    console.warn('[idea-storer] Failed to read saved data; starting from presets.', error);
+    return defaultData();
+  }
+  if (json == null) return defaultData();
+  try {
     return sanitizeData(JSON.parse(json));
   } catch (error) {
-    console.warn('[idea-storer] Failed to load saved data; starting fresh.', error);
+    console.warn('[idea-storer] Saved data was broken; backing it up and starting fresh.', error);
+    try {
+      await AsyncStorage.setItem(`${BACKUP_KEY_PREFIX}${Date.now()}`, json);
+    } catch (backupError) {
+      console.warn('[idea-storer] Could not back up broken data.', backupError);
+    }
     return defaultData();
   }
 }
