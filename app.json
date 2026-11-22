@@ -38,6 +38,23 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "8a2585eb-2976-4837-8215-f310626afcd9"
+      }
+    },
+    "owner": "atinm12",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8a2585eb-2976-4837-8215-f310626afcd9"
     }
   }
 }
