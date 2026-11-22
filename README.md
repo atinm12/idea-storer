@@ -3,7 +3,7 @@
 Idea Storer is an iOS app for saving ideas the second you have them and sorting them by topic. I picked this because I get random ideas all the time, like a table that cleans itself using UV light, and they always end up lost in my Notes app or in texts to myself. Now every idea gets a home.
 
 **Demo video:** _add link here_
-**Open it from GitHub (Expo Snack):** _add Snack link here_
+**Open in Expo Go:** https://expo.dev/accounts/atinm12/projects/idea-storer/updates/52331b03-d4d4-4a59-9991-35e18545fffc
 
 ## Screens
 
